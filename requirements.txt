@@ -1,0 +1,10 @@
+fastapi[standard]
+grpcio
+grpcio-tools
+haystack-ai
+huggingface_hub[hf_xet]
+hypercorn[uvloop]
+protobuf
+sacremoses
+sentencepiece
+transformers[torch]

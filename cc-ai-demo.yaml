@@ -1,0 +1,70 @@
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: cc-ai-demo
+  namespace: default
+  labels:
+    name: trustee
+spec:
+  runtimeClassName: kata-cc-isolation
+  containers:
+    - image: "cosmian/cc-ai-demo:0.1"
+      name: ai-demo-container
+      imagePullPolicy: Always
+      securityContext:
+        privileged: true
+      ports:
+        - containerPort: 5555
+      env:
+        - name: HF_HOME
+          value: /mnt/azuredisk/data
+      volumeMounts:
+        - mountPath: /mnt/uds
+          name: storage
+          readOnly: false
+        - mountPath: /mnt/azuredisk
+          name: persistent-storage
+          readOnly: false
+    - image: "cosmian/az-attestation-container:2.10"
+      name: attestation-container
+      imagePullPolicy: Always
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /mnt/uds
+          name: storage
+          readOnly: false
+  volumes:
+    - name: storage
+      emptyDir: {}
+    - name: persistent-storage
+      persistentVolumeClaim:
+        claimName: pvc-cc-managed-csi
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: cc-ai-demo-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    name: trustee
+  ports:
+    - protocol: TCP
+      port: 5555
+      targetPort: 5555
+      name: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-cc-managed-csi
+spec:
+  accessModes:
+    - ReadWriteOncePod
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: cc-managed-csi
